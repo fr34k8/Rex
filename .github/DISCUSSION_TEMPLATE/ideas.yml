@@ -1,0 +1,23 @@
+---
+labels: 'triage needed'
+body:
+    - type: textarea
+      attributes:
+          label: User story
+          description: 'Share the context to start the conversation: [who] wishes to do [what] and [why].'
+          placeholder: |
+              As a [user/contributor/maintainer/etc.],
+              I would like (Rex) to [do something new or better],
+              so I can [reach a specific goal].
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Describe the solution you would like
+          description: A clear and concise description of the expected behavior, including even code examples.
+      validations:
+          required: true
+    - type: textarea
+      attributes:
+          label: Additional context
+          description: Add any other context about the idea here, including any alternatives you have considered, possibly listing pros and cons.
