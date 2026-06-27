@@ -236,39 +236,39 @@ jobs:
       - name: Extract build tarball
         run: tar xvf build.tar
       - name: Set environment variables based on OS
-        uses: thaitype/actions-switch-case@v1
         id: env_cmd
-        with:
-          default: 'echo Using default environment'
-          conditionals-with-values: |
-            ${{ matrix.os == 'dragonflybsd' }} => export LANG=C
-            ${{ matrix.os == 'solaris' }} => export PATH=/usr/perl5/bin:/usr/gnu/bin:$PATH
+        run: |
+            echo COMMAND=${{ case(
+              matrix.os == 'dragonflybsd', 'export LANG=C',
+              matrix.os == 'solaris', 'export PATH=/usr/perl5/bin:/usr/gnu/bin:$PATH',
+              'echo Using default environment'
+            ) }} >> $GITHUB_OUTPUT
       - name: Select install command based on OS
-        uses: thaitype/actions-switch-case@v1
         id: install_cmd
-        with:
-          default: pkg install -y
-          conditionals-with-values: |
-            ${{ matrix.os == 'netbsd' }} => /usr/sbin/pkg_add -u
-            ${{ matrix.os == 'openbsd' }} => pkg_add
-            ${{ matrix.os == 'solaris' }} => pkg install --no-backup-be --accept -v
+        run: |
+          echo COMMAND=${{ case(
+            matrix.os == 'netbsd', '/usr/sbin/pkg_add -u',
+            matrix.os == 'openbsd', 'pkg_add',
+            matrix.os == 'solaris', 'pkg install --no-backup-be --accept -v',
+            'pkg install -y'
+          ) }} >> $GITHUB_OUTPUT
       - name: Set install command as environment variable
-        run: echo 'VM_INSTALL_CMD=${{ steps.install_cmd.outputs.match }}' >> $GITHUB_ENV
+        run: echo 'VM_INSTALL_CMD=${{ steps.install_cmd.outputs.COMMAND }}' >> $GITHUB_ENV
       - name: Set system setup command based on OS
-        uses: thaitype/actions-switch-case@v1
         id: system_cmd
-        with:
-          default: '$VM_INSTALL_CMD augeas git'
-          conditionals-with-values: |
-            ${{ matrix.os == 'solaris' }} => $VM_INSTALL_CMD developer/gcc/gcc-c developer/versioning/git system/management/augeas
+        run: |
+          echo COMMAND=${{ case(
+            matrix.os == 'solaris', '$VM_INSTALL_CMD developer/gcc/gcc-c developer/versioning/git system/management/augeas',
+            '$VM_INSTALL_CMD augeas git'
+          ) }} >> $GITHUB_OUTPUT
       - name: Set cpanm setup command based on OS
-        uses: thaitype/actions-switch-case@v1
         id: cpanm_cmd
-        with:
-          default: '$VM_INSTALL_CMD p5-App-cpanminus'
-          conditionals-with-values: |
-            ${{ matrix.os == 'openbsd' }} => cpan install App::cpanminus
-            ${{ matrix.os == 'solaris' }} => cpan install App::cpanminus
+        run: |
+          echo COMMAND=${{ case(
+            matrix.os == 'openbsd', 'cpan install App::cpanminus',
+            matrix.os == 'solaris', 'cpan install App::cpanminus',
+            '$VM_INSTALL_CMD p5-App-cpanminus'
+          ) }} >> $GITHUB_OUTPUT
       - name: Run tests on ${{ matrix.os }}
         uses: jenseng/dynamic-uses@v1
         with:
@@ -276,6 +276,6 @@ jobs:
           with: |
             {
               "envs": "LANG PERL_CPANM_OPT VM_INSTALL_CMD",
-              "prepare": "cd $GITHUB_WORKSPACE; ${{ steps.env_cmd.outputs.match }}; ${{ steps.system_cmd.outputs.match }}; ${{ steps.cpanm_cmd.outputs.match }}; cpanm --installdeps --with-all-features .; cpanm Parallel::ForkManager",
-              "run": "cd $GITHUB_WORKSPACE; ${{ steps.env_cmd.outputs.match }}; prove --timer --lib --recurse --jobs 4 --shuffle t/"
+              "prepare": "cd $GITHUB_WORKSPACE; ${{ steps.env_cmd.outputs.COMMAND }}; ${{ steps.system_cmd.outputs.COMMAND }}; ${{ steps.cpanm_cmd.outputs.COMMAND }}; cpanm --installdeps --with-all-features .; cpanm Parallel::ForkManager",
+              "run": "cd $GITHUB_WORKSPACE; ${{ steps.env_cmd.outputs.COMMAND }}; prove --timer --lib --recurse --jobs 4 --shuffle t/"
             }
